@@ -1,10 +1,13 @@
-# pwc-cli (pipwire controller -command line interface)
+# pwc-cli (pipewire controller - command line interface)
 # version: 0.1.0
 # Creator: Simon E Palmer
 
 import json
 import os
 import time
+
+
+"""Current settings"""
 
 def get_current_settings():
     if check_status() == True:
@@ -43,9 +46,12 @@ def show_current_settings():
         f"sample rate: {settings['samples']} Hz",
     )
 
+"""Manipulating settings"""
 
-def set_buffer(user_input):
-    current_buffer = get_current_settings()['buffer']
+def change_setting_value(user_input):
+    setting         = user_input[0]
+    value           = user_input[1]
+    current_setting = get_current_settings()[setting]
 
     if check_status() == True:
         if len(user_input) <= 1:
@@ -59,72 +65,43 @@ def set_buffer(user_input):
             wait_for_any_key()
 
         else:
-            if user_input[1] in valid_buffers:
-                if user_input[1] != current_buffer:
-                    os.system(f'pw-metadata -n settings 0 clock.force-quantum {user_input[1]}')
-
+            if value in valid_settings[setting]:
+                if value != current_setting:
+                    os.system (
+                        f'pw-metadata -n settings 0 clock.force-quantum {value}'
+                    )
             else:
                 os.system("clear")
-                buffer_sizes = ", ".join(valid_buffers)
+                setting_string = ", ".join(valid_settings[setting])
                 
                 print(f"'{user_input[1]}' is not a valid buffer size!")
                 text_body (
                     "Valid buffer sizes are:",
-                    buffer_sizes,
+                    setting_string,
                 )
                 wait_for_any_key()
 
     else:
         print("PIPEWIRE IS SUSPENDED")
         text_body (
-            "Can't set buffer size:",
-            "Pipewire is offline",
+            f"Can't set {user_input[0]}:",
+            "Pipewire service is offline",
         )
         wait_for_any_key()
 
 
-def set_samples(user_input):
-    current_samples = get_current_settings()['samples']
+"""Pipewire.service status"""
 
-    if check_status() == True:
-        if len(user_input) <= 1:
-            os.system("clear")
-            
-            print("NO VALUE GIVEN")
-            text_body (
-                f"No value given for the command '{user_input[0].lower()}'",
-                f"Example: {user_input[0].lower()} <value>",
-            )
-            wait_for_any_key()
-
-        else:
-            if user_input[1] in valid_rates:
-                if user_input[1] != current_samples:
-                    os.system(f'pw-metadata -n settings 0 clock.force-rate {user_input[1]}')
-            
-            else:
-                os.system("clear")
-                sample_rates = ", ".join(valid_rates)
-                
-                print(f"'{user_input[1]}' is not a valid sample rate!")
-                text_body (
-                    "Valid sample rates are:",
-                    sample_rates,
-                )       
-                wait_for_any_key()
-
+def check_status():
+    if not os.popen('pw-metadata -n settings').read() == '':
+        return True
     else:
-        print("PIPEWIRE IS SUSPENDED")
-        text_body (
-            "Can't set sample rate:",
-            "Pipewire is offline",
-        )
-        wait_for_any_key()
-    
+        os.system("clear") # error will post in console otherwise
+        return False
 
 def enable_pipewire(user_input):
     if check_status() == False:
-        os.popen("systemctl start --user pipewire.socket")        
+        os.popen("systemctl --user start pipewire.socket")        
         
         for i in range(10):
             os.system("clear")
@@ -143,7 +120,6 @@ def enable_pipewire(user_input):
         print("Pipewire is already running\n")
         wait_for_any_key()
 
-
 def disable_pipewire(user_input):
     if check_status() == True:
         os.system(f'systemctl --user stop pipewire.socket')
@@ -154,11 +130,12 @@ def disable_pipewire(user_input):
         wait_for_any_key()
 
 
+"""Saving and loading presets"""
+
 def save_preset(user_input):
     os.system("clear")
     print("Feature not implemented yet\n")
     wait_for_any_key()
-
 
 def load_preset(user_input):
     os.system("clear")
@@ -166,15 +143,7 @@ def load_preset(user_input):
     wait_for_any_key()
 
 
-def check_status():
-    if not os.popen('pw-metadata -n settings').read() == '':
-        return True
-    else:
-        os.system("clear") # error will post in console otherwise
-        return False
-
-
-# Manual page
+"""Manual page"""
 
 def manual():
     os.system("clear")
@@ -182,8 +151,11 @@ def manual():
     print()
     print("Commands:")
     print()
-    print("buffer       buffer <value> - Sets the buffer size to the chosen value")
-    print("samples      sampels <value> - Sets the sample rate to the chosen value")
+    print("buffer       buffer <value>")
+    print("                 Sets the buffer size to the chosen value")
+    print("samples      sampels <value>")
+    print("                 Sets the sample rate to the chosen value")
+    print()
     print("enable       Enables pipewire if it's suspended")
     print("disable      Disables pipewire if it's running")
     print()
@@ -191,17 +163,20 @@ def manual():
     print("exit         Exits the program")
     print()
     print("NOT YET IMPLEMENTED:")
-    print("save         save <preset name> - Saves the current settings as a preset")
-    print("load         load <preset name> - Loads the settings of a previously saved preset")
+    print()
+    print("save         save <preset name>")
+    print("                 Saves the current settings as a preset")
+    print("load         load <preset name>")
+    print("                 Loads the settings of a previously saved preset")
     print()
     wait_for_any_key()
 
-# Functions for formating or interaction
+
+"""Formating and interaction"""
 
 def wait_for_any_key():
     # until a can make it "any key" it's "press ENTER"
     input("Press ENTER to continue")
-
 
 def text_body(*args):
     print()
@@ -210,18 +185,27 @@ def text_body(*args):
     print()
 
 
-# Lists (and dict) of valid commands
+"""List and dicts of commands & settings""" 
 
-commands = {
-    "buffer": set_buffer,
-    "samples": set_samples,
-    "enable": enable_pipewire,
-    "disable": disable_pipewire,
-    "save": save_preset,
-    "load": load_preset,
+# Valid settings
+
+valid_settings = {
+    "buffer":   ["32","64","128","256","512","1024","2048"],
+    "samples":  ["44100","48000","88200","96000"],
 }
 
-# Can just add more variants of these if needed to be more intuitive
+# Dict of commands
+
+commands = {
+    "buffer":   change_setting_value,
+    "samples":  change_setting_value,
+    "enable":   enable_pipewire,
+    "disable":  disable_pipewire,
+    "save":     save_preset,
+    "load":     load_preset,
+}
+
+# Exit commands
 
 exit_variants = [
     "exit",
@@ -235,31 +219,13 @@ help_variants = [
     "man",
 ]
 
-# Valid setting values (May possibly grab from pw-metadata in the future)
-
-valid_buffers = [
-    "32",
-    "64",
-    "128",
-    "256",
-    "512",
-    "1024",
-    "2048",
-]
-
-valid_rates = [
-    "44100",
-    "48000",
-    "88200",
-    "96000",
-]
 
 def main():
     while True:
     # Clears the window and shows the current settings and prompt
         os.system("clear")
         show_current_settings()
-        user_input = input("pwc-cli: ")
+        user_input = input("Enter command: ")
         user_input_list = user_input.split(" ")
         
     # Match input (in lower case) against commands
@@ -273,13 +239,15 @@ def main():
             commands[user_input_list[0].lower()](user_input_list)
         
         else:
+            os.system("clear")
             print("NO COMMAND")
             text_body (
                 "Command could not be found",
-                "type 'help' for list of commands",
+                "Press ENTER to see list of commands",
             )
             wait_for_any_key()
-    
+            manual()
+
     # Clear screen on exit
     os.system("clear")
 
@@ -310,13 +278,5 @@ if __name__ == "__main__":
 #       imports and I would just prefer to use minimal external modules
 #       and only use what I really need and avoid non-standard ones
 #       at all costs to avoid dependencies
-#
-#   3.  Currently 2, but in the future 4, of the functions checks for
-#       a value following the command. There is probably no reason 
-#       this could not be relayed to a seperate function to test.
-#
-#       Same could probably be said for the checking if the given
-#       value is a valid one. Only thing I need to keep in mind is
-#       to make sure I get the error messages seperate.
 #
 ###############################################################################
