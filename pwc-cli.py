@@ -13,17 +13,17 @@ def get_current_settings():
     if check_status() == True:
         current_settings = os.popen('pw-metadata -n settings').read()
         settings_list = current_settings.split("'")
-            
         buffer_index = settings_list.index('clock.force-quantum')
+
         if settings_list[buffer_index+2] == str(0):
             buffer_index = settings_list.index('clock.quantum')
         buffer = settings_list[buffer_index+2]
 
         samples_index = settings_list.index('clock.force-rate')
-        if settings_list[samples_index+2] == str(0): 
+        if settings_list[samples_index+2] == str(0):
             samples_index = settings_list.index('clock.rate')
         samples = settings_list[samples_index+2]
-        
+
         return {
             "status": "Pipewire is RUNNING",
             "buffer": buffer,
@@ -56,10 +56,10 @@ def change_setting_value(user_input):
     if check_status() == True:
         if len(user_input) <= 1:
             os.system("clear")
-            
+
             print("NO VALUE GIVEN")
             text_body (
-                f"No value given for the command '{user_input[0].lower()}'", 
+                f"No value given for the command '{user_input[0].lower()}'",
                 f"Example: {user_input[0].lower()} <value>",
             )
             wait_for_any_key()
@@ -73,7 +73,7 @@ def change_setting_value(user_input):
             else:
                 os.system("clear")
                 setting_string = ", ".join(valid_settings[setting])
-                
+
                 print(f"'{user_input[1]}' is not a valid buffer size!")
                 text_body (
                     "Valid buffer sizes are:",
@@ -101,18 +101,18 @@ def check_status():
 
 def enable_pipewire(user_input):
     if check_status() == False:
-        os.popen("systemctl --user start pipewire.socket")        
-        
+        os.popen("systemctl --user start pipewire.socket")
+
         for i in range(10):
             os.system("clear")
-            
+
             print("Pipewire is STARTING")
             text_body (
                 "This will take a few seconds",
                 f"Loading{'.'*i}",
             )
             time.sleep(1)
-        
+
         wait_for_any_key()
 
     else:
@@ -124,7 +124,7 @@ def disable_pipewire(user_input):
     if check_status() == True:
         os.system(f'systemctl --user stop pipewire.socket')
         os.system(f'systemctl --user stop pipewire.service')
-    else: 
+    else:
         os.system("clear")
         print("Pipewire is already suspended\n")
         wait_for_any_key()
@@ -185,7 +185,7 @@ def text_body(*args):
     print()
 
 
-"""List and dicts of commands & settings""" 
+"""List and dicts of commands & settings"""
 
 # Valid settings
 
@@ -227,7 +227,7 @@ def main():
         show_current_settings()
         user_input = input("Enter command: ")
         user_input_list = user_input.split(" ")
-        
+
     # Match input (in lower case) against commands
         if user_input_list[0].lower() in exit_variants:
             break
@@ -237,7 +237,7 @@ def main():
 
         elif user_input_list[0].lower() in commands:
             commands[user_input_list[0].lower()](user_input_list)
-        
+
         else:
             os.system("clear")
             print("NO COMMAND")
@@ -268,7 +268,7 @@ if __name__ == "__main__":
 #       I will also need to figure out how to apply the settings.
 #       Currently I'm thinking to loop though the dict keys and
 #       call the appropriate function.
-#       
+#
 #
 #   2.  I want to find a neat way to replace "press ENTER to continue"
 #       with "press any key to continue" but for Linux this seems to not
