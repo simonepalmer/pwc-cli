@@ -10,11 +10,13 @@ import time
 """Current settings"""
 
 def get_current_settings():
+    # If pipewire is running, get current settings from metadata
     if check_status() == True:
         current_settings = os.popen('pw-metadata -n settings').read()
         settings_list = current_settings.split("'")
-        buffer_index = settings_list.index('clock.force-quantum')
 
+        # If there is no forced value, get default value
+        buffer_index = settings_list.index('clock.force-quantum')
         if settings_list[buffer_index+2] == str(0):
             buffer_index = settings_list.index('clock.quantum')
         buffer = settings_list[buffer_index+2]
@@ -23,6 +25,8 @@ def get_current_settings():
         if settings_list[samples_index+2] == str(0):
             samples_index = settings_list.index('clock.rate')
         samples = settings_list[samples_index+2]
+
+        # Retrun current settings
 
         return {
             "status": "Pipewire is RUNNING",
@@ -36,47 +40,53 @@ def get_current_settings():
             "samples": "-",
         }
 
-
 def show_current_settings():
     settings = get_current_settings()
 
     print(f"{settings['status']}")
     text_body (
-        f"buffer size: {settings['buffer']} samples",
+        f"buffer size: {settings['buffer']} spls",
         f"sample rate: {settings['samples']} Hz",
     )
+
 
 """Manipulating settings"""
 
 def change_setting_value(user_input):
     setting         = user_input[0]
-    value           = user_input[1]
     current_setting = get_current_settings()[setting]
 
+    # Check if pipewire.service is running
     if check_status() == True:
+        # Check if the input command has a value example: "buffer 512"
         if len(user_input) <= 1:
             os.system("clear")
 
             print("NO VALUE GIVEN")
             text_body (
-                f"No value given for the command '{user_input[0].lower()}'",
-                f"Example: {user_input[0].lower()} <value>",
+                f"No value given for the command '{setting.lower()}'",
+                f"Example: '{setting.lower()} <value>'",
             )
             wait_for_any_key()
 
         else:
+            # Check if it's a valid value for the given command
+            value = user_input[1]
+
             if value in valid_settings[setting]:
+                # Change value if it's not the same as current value
                 if value != current_setting:
                     os.system (
-                        f'pw-metadata -n settings 0 clock.force-quantum {value}'
+                    f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
                     )
             else:
-                os.system("clear")
+                # Give a hint of valid values if the one given is not
                 setting_string = ", ".join(valid_settings[setting])
+                os.system("clear")
 
-                print(f"'{user_input[1]}' is not a valid buffer size!")
+                print(f"'{value}' is not a valid value for '{setting}'!")
                 text_body (
-                    "Valid buffer sizes are:",
+                    "Valid values are:",
                     setting_string,
                 )
                 wait_for_any_key()
@@ -84,7 +94,7 @@ def change_setting_value(user_input):
     else:
         print("PIPEWIRE IS SUSPENDED")
         text_body (
-            f"Can't set {user_input[0]}:",
+            f"Can't set setting:",
             "Pipewire service is offline",
         )
         wait_for_any_key()
@@ -96,16 +106,18 @@ def check_status():
     if not os.popen('pw-metadata -n settings').read() == '':
         return True
     else:
-        os.system("clear") # error will post in console otherwise
+        # Clear error message from console if not running
+        os.system("clear")
         return False
 
 def enable_pipewire(user_input):
     if check_status() == False:
         os.popen("systemctl --user start pipewire.socket")
 
+        # Wait for pipewire.socket to start pipewire.service
         for i in range(10):
+            # Adds dots after "loading" to show that program is not frozen
             os.system("clear")
-
             print("Pipewire is STARTING")
             text_body (
                 "This will take a few seconds",
@@ -113,6 +125,7 @@ def enable_pipewire(user_input):
             )
             time.sleep(1)
 
+        # Demand keypress as extra buffer for very slow systems :)
         wait_for_any_key()
 
     else:
@@ -205,6 +218,11 @@ commands = {
     "load":     load_preset,
 }
 
+pw_commands = {
+    "buffer":   'clock.force-quantum',
+    "samples":  'clock.force-rate',
+}
+
 # Exit commands
 
 exit_variants = [
@@ -212,6 +230,8 @@ exit_variants = [
     "quit",
     ":q",
 ]
+
+# Help commands
 
 help_variants = [
     "help",
@@ -228,7 +248,7 @@ def main():
         user_input = input("Enter command: ")
         user_input_list = user_input.split(" ")
 
-    # Match input (in lower case) against commands
+        # Match input (in lower case) against commands
         if user_input_list[0].lower() in exit_variants:
             break
 
@@ -256,7 +276,7 @@ if __name__ == "__main__":
 
 
 ###############################################################################
-# FUTURE PLANS!
+#       FUTURE PLANS!
 #
 #   1.  Implement presets saved to a json file.
 #       General idea is a have a json file with dicts for all the
