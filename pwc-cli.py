@@ -6,6 +6,8 @@ import json
 import os
 import time
 
+PRESET_FILE = ".presets.json"
+presets = {}
 
 """Current settings"""
 
@@ -67,7 +69,7 @@ def change_setting_value(user_input):
                 f"No value given for the command '{setting.lower()}'",
                 f"Example: '{setting.lower()} <value>'",
             )
-            wait_for_any_key()
+            wait_for_key()
 
         else:
             # Check if it's a valid value for the given command
@@ -89,7 +91,7 @@ def change_setting_value(user_input):
                     "Valid values are:",
                     setting_string,
                 )
-                wait_for_any_key()
+                wait_for_key()
 
     else:
         print("PIPEWIRE IS SUSPENDED")
@@ -97,7 +99,7 @@ def change_setting_value(user_input):
             f"Can't set setting:",
             "Pipewire service is offline",
         )
-        wait_for_any_key()
+        wait_for_key()
 
 
 """Pipewire.service status"""
@@ -126,12 +128,12 @@ def enable_pipewire(user_input):
             time.sleep(1)
 
         # Demand keypress as extra buffer for very slow systems :)
-        wait_for_any_key()
+        wait_for_key()
 
     else:
         os.system("clear")
         print("Pipewire is already running\n")
-        wait_for_any_key()
+        wait_for_key()
 
 def disable_pipewire(user_input):
     if check_status() == True:
@@ -140,20 +142,143 @@ def disable_pipewire(user_input):
     else:
         os.system("clear")
         print("Pipewire is already suspended\n")
-        wait_for_any_key()
+        wait_for_key()
 
 
-"""Saving and loading presets"""
+"""Presets"""
 
 def save_preset(user_input):
     os.system("clear")
-    print("Feature not implemented yet\n")
-    wait_for_any_key()
+
+    if check_status() == True:
+        # Check if a name for the preset is given
+        if len(user_input) > 1:
+            preset_name = user_input[1]
+            preset_data = get_current_settings()
+
+            if not os.path.isfile(PRESET_FILE) or os.stat(PRESET_FILE).st_size == 0:
+                presets = {}
+            else:
+                with open(PRESET_FILE, "r") as f:
+                    presets = json.load(f)
+
+            # Check if preset ID already exists
+            if preset_name in presets:
+                if not prompt_yes_no("Preset ID already exists, overwrite it?"):
+                    return
+
+            # Add new preset
+            presets[preset_name] = preset_data
+
+            # Save updated presets
+            with open(PRESET_FILE, "w") as f:
+                json.dump(presets, f, indent=4)
+
+            os.system("clear")
+            print(f"Preset '{preset_name}' saved!\n")
+            wait_for_key()
+
+        else:
+            os.system("clear")
+            print("No preset name given!\n")
+            wait_for_key()
+    else:
+        os.system("clear")
+        print("Pipewire is suspended. Can't save preset.\n")
+        wait_for_key()
 
 def load_preset(user_input):
     os.system("clear")
-    print("Feature not implemented yet\n")
-    wait_for_any_key()
+
+    preset_name = user_input[1]
+
+    # Load presets from file
+    try:
+        with open(PRESET_FILE, "r") as f:
+            presets = json.load(f)
+    except FileNotFoundError:
+        os.system("clear")
+        print("No presets found!\n")
+        wait_for_key()
+        return
+
+    # Check if preset ID exists
+    if preset_name not in presets:
+        os.system("clear")
+        print(f"Preset '{preset_name}' not found!\n")
+        wait_for_key()
+        return
+
+    # Load preset values
+    preset = presets[preset_name]
+    buffer_value = preset["buffer"]
+    samples_value = preset["samples"]
+
+    # Change values
+    change_setting_value(["buffer", buffer_value])
+    change_setting_value(["samples", samples_value])
+
+    # Display success message
+    os.system("clear")
+    print(f"Preset '{preset_name}' loaded successfully\n")
+    wait_for_key()
+
+def list_preset(user_input):
+    try:
+        with open(PRESET_FILE, "r") as f:
+            presets = json.load(f)
+    except FileNotFoundError:
+        os.system("clear")
+        print("No presets found!\n")
+        wait_for_key()
+        return
+
+    os.system("clear")
+    print("List of available presets:\n")
+
+    for preset_name, preset in presets.items():
+        buffer_value = preset["buffer"]
+        samples_value = preset["samples"]
+
+        print(f"{preset_name.upper()}")
+        print(f"buffer={buffer_value}, samples={samples_value}")
+        print()
+
+    wait_for_key()
+
+def remove_preset(user_input):
+    os.system("clear")
+
+    preset_name = user_input[1]
+
+    # Load presets from file
+    try:
+        with open(PRESET_FILE, "r") as f:
+            presets = json.load(f)
+    except FileNotFoundError:
+        os.system("clear")
+        print("No presets found!\n")
+        wait_for_key()
+        return
+
+    # Check if preset ID exists
+    if preset_name not in presets:
+        os.system("clear")
+        print(f"Preset '{preset_name}' not found!\n")
+        wait_for_key()
+        return
+
+    # Remove the preset
+    presets.pop(preset_name)
+
+    # Save the updated presets file
+    with open(PRESET_FILE, "w") as f:
+        json.dump(presets, f)
+
+    # Display success message
+    os.system("clear")
+    print(f"Preset '{preset_name}' removed successfully\n")
+    wait_for_key()
 
 
 """Manual page"""
@@ -175,20 +300,23 @@ def manual():
     print("help         Displays this page")
     print("exit         Exits the program")
     print()
-    print("NOT YET IMPLEMENTED:")
-    print()
     print("save         save <preset name>")
     print("                 Saves the current settings as a preset")
     print("load         load <preset name>")
     print("                 Loads the settings of a previously saved preset")
+    print("list         list")
+    print("                 Lists all saved presets")
+    print("remove       remove <preset name>")
+    print("                 Removes the named preset")
     print()
-    wait_for_any_key()
+    print("Note that presets can not be saved when pipewire is suspended!")
+    print()
+    wait_for_key()
 
 
 """Formating and interaction"""
 
-def wait_for_any_key():
-    # until a can make it "any key" it's "press ENTER"
+def wait_for_key():
     input("Press ENTER to continue")
 
 def text_body(*args):
@@ -197,6 +325,15 @@ def text_body(*args):
         print(string)
     print()
 
+def prompt_yes_no(question):
+    while True:
+        answer = input(f"{question} (y/n): ").lower()
+        if answer == "y":
+            return True
+        elif answer == "n":
+            return False
+        else:
+            print("Invalid answer. Please enter 'y' or 'n'.")
 
 """List and dicts of commands & settings"""
 
@@ -207,7 +344,7 @@ valid_settings = {
     "samples":  ["44100","48000","88200","96000"],
 }
 
-# Dict of commands
+# Dicts of commands
 
 commands = {
     "buffer":   change_setting_value,
@@ -216,6 +353,8 @@ commands = {
     "disable":  disable_pipewire,
     "save":     save_preset,
     "load":     load_preset,
+    "list":     list_preset,
+    "remove":   remove_preset,
 }
 
 pw_commands = {
@@ -241,9 +380,15 @@ help_variants = [
 
 
 def main():
+    #Create file for presets if it doesn't exist
+    if not os.path.isfile(PRESET_FILE):
+        with open(PRESET_FILE, "w") as f:
+            json.dump({}, f)
+
     while True:
     # Clears the window and shows the current settings and prompt
         os.system("clear")
+
         show_current_settings()
         user_input = input("Enter command: ")
         user_input_list = user_input.split(" ")
@@ -263,13 +408,14 @@ def main():
             print("NO COMMAND")
             text_body (
                 "Command could not be found",
-                "Press ENTER to see list of commands",
+                "Use command 'help' to show manual page at any time",
             )
-            wait_for_any_key()
-            manual()
+            if prompt_yes_no("Show manual page right away?") == True:
+                manual()
 
     # Clear screen on exit
     os.system("clear")
+
 
 if __name__ == "__main__":
     main()
