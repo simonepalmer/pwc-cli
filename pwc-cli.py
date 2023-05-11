@@ -110,13 +110,7 @@ def check_value(user_input):
     if len(user_input) > 1:
         return True
     else:
-        os.system("clear")
-        print("NO VALUE GIVEN")
-        text_body (
-            f"No value given for the command '{user_input[0]}'",
-            f"Example: '{user_input[0]} <value>'",
-        )
-        wait_for_key()
+        value_error(user_input)
         return
 
 def enable_pipewire(user_input):
@@ -162,12 +156,8 @@ def save_preset(user_input):
     # Check if a name for the preset is given
     if check_value(user_input) == True:
         preset_name = user_input[1]
-    else:
-        return
 
-    if check_status() == True:
-
-        # Check if file exists
+        # Check if file exists & load
         if not os.path.isfile(PRESET_FILE) or os.stat(PRESET_FILE).st_size == 0:
             presets = {}
         else:
@@ -178,6 +168,10 @@ def save_preset(user_input):
         if preset_name in presets:
             if not prompt_yes_no("Preset ID already exists, overwrite it?"):
                 return
+    else:
+        return
+
+    if check_status() == True:
 
         # Add new preset
         presets[preset_name] = preset_data
@@ -209,10 +203,6 @@ def load_preset(user_input):
     # Check if a name for the preset is given
     if check_value(user_input) == True:
         preset_name = user_input[1]
-    else:
-        return
-
-    if check_status() == True:
 
         # Load presets from file
         try:
@@ -230,6 +220,10 @@ def load_preset(user_input):
             print(f"Preset '{preset_name}' not found!\n")
             wait_for_key()
             return
+    else:
+        return
+
+    if check_status() == True:
 
         # Load preset values
         preset = presets[preset_name]
@@ -271,6 +265,7 @@ def list_preset(user_input):
     os.system("clear")
     print("List of available presets:\n")
 
+    # Loop though and print ID and settings for each preset
     for preset_name, preset in presets.items():
         buffer_value = preset["buffer"]
         samples_value = preset["samples"]
@@ -366,6 +361,15 @@ def text_body(*args):
     for string in args:
         print(string)
     print()
+
+def value_error(user_input):
+    os.system("clear")
+    print("NO VALUE GIVEN")
+    text_body (
+        f"No value given for the command '{user_input[0]}'",
+        f"Example: '{user_input[0]} <value>'",
+    )
+    wait_for_key()
 
 def prompt_yes_no(question):
     while True:
@@ -466,19 +470,7 @@ if __name__ == "__main__":
 ###############################################################################
 #       FUTURE PLANS!
 #
-#   1.  Implement presets saved to a json file.
-#       General idea is a have a json file with dicts for all the
-#       settings. I'm not yet done thinking though the details.
-#       Will need the json file to sort them by name and need to
-#       figure out how to check the file for conflicting names
-#       and offer to overwrite it.
-#
-#       I will also need to figure out how to apply the settings.
-#       Currently I'm thinking to loop though the dict keys and
-#       call the appropriate function.
-#
-#
-#   2.  I want to find a neat way to replace "press ENTER to continue"
+#   1.  I want to find a neat way to replace "press ENTER to continue"
 #       with "press any key to continue" but for Linux this seems to not
 #       be as easy as os.system("pause") like on windows.
 #
