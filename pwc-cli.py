@@ -6,7 +6,7 @@ import json
 import os
 import time
 
-PRESET_FILE = ".presets.json"
+PRESET_FILE = os.path.join(os.path.expanduser("~"), ".presets.json")
 presets = {}
 
 """Current settings"""
