@@ -6,7 +6,10 @@ import json
 import os
 import time
 
-PRESET_FILE = os.path.join(os.path.expanduser("~"), ".presets.json")
+# Creating a path for the config file and global presets variable
+PRESET_PATH = os.path.expanduser("~/.config/pwc-cli")
+os.makedirs(PRESET_PATH, exist_ok=True)
+PRESET_FILE = os.path.join(PRESET_PATH, ".presets.json")
 presets = {}
 
 """Current settings"""
@@ -61,37 +64,28 @@ def change_setting_value(user_input):
     # Check if pipewire.service is running
     if check_status() == True:
         # Check if the input command has a value example: "buffer 512"
-        if len(user_input) <= 1:
+        if check_value(user_input) == True:
+            value = user_input[1]
+        else:
+            return
+
+        if value in valid_settings[setting]:
+        # Change value if it's not the same as current value
+            if value != current_setting:
+                os.system (
+                    f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
+                )
+        else:
+            # Give a hint of valid values if the one given is not
+            setting_string = ", ".join(valid_settings[setting])
             os.system("clear")
 
-            print("NO VALUE GIVEN")
+            print(f"'{value}' is not a valid value for '{setting}'!")
             text_body (
-                f"No value given for the command '{setting.lower()}'",
-                f"Example: '{setting.lower()} <value>'",
+                "Valid values are:",
+                setting_string,
             )
             wait_for_key()
-
-        else:
-            # Check if it's a valid value for the given command
-            value = user_input[1]
-
-            if value in valid_settings[setting]:
-                # Change value if it's not the same as current value
-                if value != current_setting:
-                    os.system (
-                    f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
-                    )
-            else:
-                # Give a hint of valid values if the one given is not
-                setting_string = ", ".join(valid_settings[setting])
-                os.system("clear")
-
-                print(f"'{value}' is not a valid value for '{setting}'!")
-                text_body (
-                    "Valid values are:",
-                    setting_string,
-                )
-                wait_for_key()
 
     else:
         print("PIPEWIRE IS SUSPENDED")
@@ -111,6 +105,19 @@ def check_status():
         # Clear error message from console if not running
         os.system("clear")
         return False
+
+def check_value(user_input):
+    if len(user_input) > 1:
+        return True
+    else:
+        os.system("clear")
+        print("NO VALUE GIVEN")
+        text_body (
+            f"No value given for the command '{user_input[0]}'",
+            f"Example: '{user_input[0]} <value>'",
+        )
+        wait_for_key()
+        return
 
 def enable_pipewire(user_input):
     if check_status() == False:
@@ -141,7 +148,7 @@ def disable_pipewire(user_input):
         os.system(f'systemctl --user stop pipewire.service')
     else:
         os.system("clear")
-        print("Pipewire is already suspended\n")
+        print("PIPEWIRE IS ALREADY SUSPENDED\n")
         wait_for_key()
 
 
@@ -150,78 +157,106 @@ def disable_pipewire(user_input):
 def save_preset(user_input):
     os.system("clear")
 
+    preset_data = get_current_settings()
+
+    # Check if a name for the preset is given
+    if check_value(user_input) == True:
+        preset_name = user_input[1]
+    else:
+        return
+
     if check_status() == True:
-        # Check if a name for the preset is given
-        if len(user_input) > 1:
-            preset_name = user_input[1]
-            preset_data = get_current_settings()
 
-            if not os.path.isfile(PRESET_FILE) or os.stat(PRESET_FILE).st_size == 0:
-                presets = {}
-            else:
-                with open(PRESET_FILE, "r") as f:
-                    presets = json.load(f)
-
-            # Check if preset ID already exists
-            if preset_name in presets:
-                if not prompt_yes_no("Preset ID already exists, overwrite it?"):
-                    return
-
-            # Add new preset
-            presets[preset_name] = preset_data
-
-            # Save updated presets
-            with open(PRESET_FILE, "w") as f:
-                json.dump(presets, f, indent=4)
-
-            os.system("clear")
-            print(f"Preset '{preset_name}' saved!\n")
-            wait_for_key()
-
+        # Check if file exists
+        if not os.path.isfile(PRESET_FILE) or os.stat(PRESET_FILE).st_size == 0:
+            presets = {}
         else:
-            os.system("clear")
-            print("No preset name given!\n")
-            wait_for_key()
+            with open(PRESET_FILE, "r") as f:
+                presets = json.load(f)
+
+        # Check if preset ID already exists
+        if preset_name in presets:
+            if not prompt_yes_no("Preset ID already exists, overwrite it?"):
+                return
+
+        # Add new preset
+        presets[preset_name] = preset_data
+
+        # Save updated presets
+        with open(PRESET_FILE, "w") as f:
+            json.dump(presets, f, indent=4)
+
+        os.system("clear")
+        print("PRESET SAVED SUCCESSFULLY!")
+        text_body (
+            f"Preset '{preset_name}' was saved to file:",
+            f"{PRESET_FILE}",
+        )
+        wait_for_key()
+
     else:
         os.system("clear")
-        print("Pipewire is suspended. Can't save preset.\n")
+        print("PIPEWIRE IS SUSPENDED")
+        text_body (
+            f"Can't save preset '{preset_name}':",
+            "Pipewire service is offline",
+        )
         wait_for_key()
 
 def load_preset(user_input):
     os.system("clear")
 
-    preset_name = user_input[1]
-
-    # Load presets from file
-    try:
-        with open(PRESET_FILE, "r") as f:
-            presets = json.load(f)
-    except FileNotFoundError:
-        os.system("clear")
-        print("No presets found!\n")
-        wait_for_key()
+    # Check if a name for the preset is given
+    if check_value(user_input) == True:
+        preset_name = user_input[1]
+    else:
         return
 
-    # Check if preset ID exists
-    if preset_name not in presets:
+    if check_status() == True:
+
+        # Load presets from file
+        try:
+            with open(PRESET_FILE, "r") as f:
+                presets = json.load(f)
+        except FileNotFoundError:
+            os.system("clear")
+            print("No presets found!\n")
+            wait_for_key()
+            return
+
+        # Check if preset ID exists
+        if preset_name not in presets:
+            os.system("clear")
+            print(f"Preset '{preset_name}' not found!\n")
+            wait_for_key()
+            return
+
+        # Load preset values
+        preset = presets[preset_name]
+        buffer_value = preset["buffer"]
+        samples_value = preset["samples"]
+
+        # Change values
+        change_setting_value(["buffer", buffer_value])
+        change_setting_value(["samples", samples_value])
+
+        # Display success message
         os.system("clear")
-        print(f"Preset '{preset_name}' not found!\n")
+        print("PRESET LOADED SUCCESSFULLY!")
+        text_body (
+            f"Preset '{preset_name}' was loaded from file:",
+            f"{PRESET_FILE}",
+        )
         wait_for_key()
-        return
 
-    # Load preset values
-    preset = presets[preset_name]
-    buffer_value = preset["buffer"]
-    samples_value = preset["samples"]
-
-    # Change values
-    change_setting_value(["buffer", buffer_value])
-    change_setting_value(["samples", samples_value])
-
-    # Display success message
-    os.system("clear")
-    print(f"Preset '{preset_name}' loaded successfully\n")
-    wait_for_key()
+    else:
+        os.system("clear")
+        print("PIPEWIRE IS SUSPENDED")
+        text_body (
+            f"Can't load preset '{preset_name}':",
+            "Pipewire service is offline",
+        )
+        wait_for_key()
 
 def list_preset(user_input):
     try:
@@ -249,7 +284,10 @@ def list_preset(user_input):
 def remove_preset(user_input):
     os.system("clear")
 
-    preset_name = user_input[1]
+    if check_value(user_input) == True:
+        preset_name = user_input[1]
+    else:
+        return
 
     # Load presets from file
     try:
@@ -277,7 +315,11 @@ def remove_preset(user_input):
 
     # Display success message
     os.system("clear")
-    print(f"Preset '{preset_name}' removed successfully\n")
+    print("REMOVED SUCCESSFULLY!")
+    text_body (
+        f"Preset '{preset_name}' was removed from file:",
+        f"{PRESET_FILE}",
+    )
     wait_for_key()
 
 
