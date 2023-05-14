@@ -6,11 +6,11 @@ import json
 import os
 import time
 
-# Creating a path for the config file and global presets variable
+# Path to config file and global presets variables
 PRESET_PATH = os.path.expanduser("~/.config/pwc-cli")
 os.makedirs(PRESET_PATH, exist_ok=True)
 PRESET_FILE = os.path.join(PRESET_PATH, ".presets.json")
-presets = {}
+# presets = {} # Don't know if I need this? let's try without a bit!
 
 """Current settings"""
 
@@ -35,14 +35,14 @@ def get_current_settings():
 
         return {
             "status": "Pipewire is RUNNING",
-            "buffer": buffer,
-            "samples": samples,
+            "buffer": f"{buffer} spls",
+            "samples": f"{samples} Hz",
         }
     else:
         return {
             "status": "Pipewire is SUSPENDED",
-            "buffer": "-",
-            "samples": "-",
+            "buffer": "disabled",
+            "samples": "disabled",
         }
 
 def show_current_settings():
@@ -50,8 +50,8 @@ def show_current_settings():
 
     print(f"{settings['status']}")
     text_body (
-        f"buffer size: {settings['buffer']} spls",
-        f"sample rate: {settings['samples']} Hz",
+        f"buffer size: {settings['buffer']}",
+        f"sample rate: {settings['samples']}",
     )
 
 
@@ -341,10 +341,10 @@ def manual():
     print("                 Saves the current settings as a preset")
     print("load         load <preset name>")
     print("                 Loads the settings of a previously saved preset")
-    print("list         list")
-    print("                 Lists all saved presets")
     print("remove       remove <preset name>")
     print("                 Removes the named preset")
+    print("list         list")
+    print("                 Lists all saved presets")
     print()
     print("Note that presets can not be saved when pipewire is suspended!")
     print()
@@ -354,7 +354,8 @@ def manual():
 """Formating and interaction"""
 
 def wait_for_key():
-    input("Press ENTER to continue")
+    # input("Press ENTER to continue")
+    os.system("bash -c 'read -n 1 -s -r -p \"Press any key to continue...\"'")
 
 def text_body(*args):
     print()
@@ -454,9 +455,9 @@ def main():
             print("NO COMMAND")
             text_body (
                 "Command could not be found",
-                "Use command 'help' to show manual page at any time",
+                "Use command 'help' to show manual page",
             )
-            if prompt_yes_no("Show manual page right away?") == True:
+            if prompt_yes_no("See manual page now?") == True:
                 manual()
 
     # Clear screen on exit
@@ -470,13 +471,8 @@ if __name__ == "__main__":
 ###############################################################################
 #       FUTURE PLANS!
 #
-#   1.  I want to find a neat way to replace "press ENTER to continue"
-#       with "press any key to continue" but for Linux this seems to not
-#       be as easy as os.system("pause") like on windows.
-#
-#       I have come across some solutions but they require 3 different
-#       imports and I would just prefer to use minimal external modules
-#       and only use what I really need and avoid non-standard ones
-#       at all costs to avoid dependencies
+#   1.  I am not completely sure about the reading and writing to JSON so
+#       I will come back to it at a later point and hopefully improve it
+#       when I have learned more
 #
 ###############################################################################
