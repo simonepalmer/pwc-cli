@@ -1,5 +1,5 @@
 # pwc-cli (pipewire controller - command line interface)
-# version: 0.1.0
+# version: 0.5.0
 # Creator: Simon E Palmer
 
 import json
@@ -10,7 +10,6 @@ import time
 PRESET_PATH = os.path.expanduser("~/.config/pwc-cli")
 os.makedirs(PRESET_PATH, exist_ok=True)
 PRESET_FILE = os.path.join(PRESET_PATH, ".presets.json")
-# presets = {} # Don't know if I need this? let's try without a bit!
 
 """Current settings"""
 
@@ -46,10 +45,11 @@ def get_current_settings():
         }
 
 def show_current_settings():
+    # Get and show the current settings
     settings = get_current_settings()
 
     print(f"{settings['status']}")
-    text_body (
+    text_body(
         f"buffer size: {settings['buffer']}",
         f"sample rate: {settings['samples']}",
     )
@@ -58,21 +58,22 @@ def show_current_settings():
 """Manipulating settings"""
 
 def change_setting_value(user_input):
+    # Check if value is valid for command and set it
     setting         = user_input[0]
     current_setting = get_current_settings()[setting]
 
     # Check if pipewire.service is running
     if check_status() == True:
-        # Check if the input command has a value example: "buffer 512"
+        # Check if the input has a value
         if check_value(user_input) == True:
             value = user_input[1]
         else:
             return
 
         if value in valid_settings[setting]:
-        # Change value if it's not the same as current value
+        # Change value if it's different from current setting
             if value != current_setting:
-                os.system (
+                os.system(
                     f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
                 )
         else:
@@ -81,7 +82,7 @@ def change_setting_value(user_input):
             os.system("clear")
 
             print(f"'{value}' is not a valid value for '{setting}'!")
-            text_body (
+            text_body(
                 "Valid values are:",
                 setting_string,
             )
@@ -89,7 +90,7 @@ def change_setting_value(user_input):
 
     else:
         print("PIPEWIRE IS SUSPENDED")
-        text_body (
+        text_body(
             f"Can't set setting:",
             "Pipewire service is offline",
         )
@@ -99,6 +100,7 @@ def change_setting_value(user_input):
 """Pipewire.service status"""
 
 def check_status():
+    # Check if pipewire is running
     if not os.popen('pw-metadata -n settings').read() == '':
         return True
     else:
@@ -107,6 +109,7 @@ def check_status():
         return False
 
 def check_value(user_input):
+    # Check if command is paired with a value
     if len(user_input) > 1:
         return True
     else:
@@ -114,6 +117,7 @@ def check_value(user_input):
         return
 
 def enable_pipewire(user_input):
+    # Enable pipewire (with laoding screen)
     if check_status() == False:
         os.popen("systemctl --user start pipewire.socket")
 
@@ -122,7 +126,7 @@ def enable_pipewire(user_input):
             # Adds dots after "loading" to show that program is not frozen
             os.system("clear")
             print("Pipewire is STARTING")
-            text_body (
+            text_body(
                 "This will take a few seconds",
                 f"Loading{'.'*i}",
             )
@@ -137,6 +141,7 @@ def enable_pipewire(user_input):
         wait_for_key()
 
 def disable_pipewire(user_input):
+    # Disable pipewire.service and pipewire.socket
     if check_status() == True:
         os.system(f'systemctl --user stop pipewire.socket')
         os.system(f'systemctl --user stop pipewire.service')
@@ -182,7 +187,7 @@ def save_preset(user_input):
 
         os.system("clear")
         print("PRESET SAVED SUCCESSFULLY!")
-        text_body (
+        text_body(
             f"Preset '{preset_name}' was saved to file:",
             f"{PRESET_FILE}",
         )
@@ -191,7 +196,7 @@ def save_preset(user_input):
     else:
         os.system("clear")
         print("PIPEWIRE IS SUSPENDED")
-        text_body (
+        text_body(
             f"Can't save preset '{preset_name}':",
             "Pipewire service is offline",
         )
@@ -237,7 +242,7 @@ def load_preset(user_input):
         # Display success message
         os.system("clear")
         print("PRESET LOADED SUCCESSFULLY!")
-        text_body (
+        text_body(
             f"Preset '{preset_name}' was loaded from file:",
             f"{PRESET_FILE}",
         )
@@ -246,7 +251,7 @@ def load_preset(user_input):
     else:
         os.system("clear")
         print("PIPEWIRE IS SUSPENDED")
-        text_body (
+        text_body(
             f"Can't load preset '{preset_name}':",
             "Pipewire service is offline",
         )
@@ -311,7 +316,7 @@ def remove_preset(user_input):
     # Display success message
     os.system("clear")
     print("REMOVED SUCCESSFULLY!")
-    text_body (
+    text_body(
         f"Preset '{preset_name}' was removed from file:",
         f"{PRESET_FILE}",
     )
@@ -354,8 +359,13 @@ def manual():
 """Formating and interaction"""
 
 def wait_for_key():
-    # input("Press ENTER to continue")
-    os.system("bash -c 'read -n 1 -s -r -p \"Press any key to continue...\"'")
+    if os.name == 'posix':
+        return os.system(
+            "bash -c 'read -n 1 -s -r -p \"Press any key to continue...\"'"
+        ) == 0
+    else:
+        input("Press ENTER to continue...")
+        return True
 
 def text_body(*args):
     print()
@@ -366,7 +376,7 @@ def text_body(*args):
 def value_error(user_input):
     os.system("clear")
     print("NO VALUE GIVEN")
-    text_body (
+    text_body(
         f"No value given for the command '{user_input[0]}'",
         f"Example: '{user_input[0]} <value>'",
     )
@@ -453,7 +463,7 @@ def main():
         else:
             os.system("clear")
             print("NO COMMAND")
-            text_body (
+            text_body(
                 "Command could not be found",
                 "Use command 'help' to show manual page",
             )
@@ -474,5 +484,7 @@ if __name__ == "__main__":
 #   1.  I am not completely sure about the reading and writing to JSON so
 #       I will come back to it at a later point and hopefully improve it
 #       when I have learned more
+#       and load_preset to open contents of the file. Check taken names
+#       and find the selected preset respectivly
 #
 ###############################################################################
