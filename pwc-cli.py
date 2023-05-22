@@ -62,16 +62,17 @@ def change_setting_value(user_input):
     setting         = user_input[0]
     current_setting = get_current_settings()[setting]
 
+    # Check if the input has a value
+    if check_value(user_input) == True:
+        value = user_input[1]
+    else:
+        return
+
     # Check if pipewire.service is running
     if check_status() == True:
-        # Check if the input has a value
-        if check_value(user_input) == True:
-            value = user_input[1]
-        else:
-            return
 
         if value in valid_settings[setting]:
-        # Change value if it's different from current setting
+            # Change value if it's different from current setting
             if value != current_setting:
                 os.system(
                     f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
@@ -156,35 +157,30 @@ def disable_pipewire(user_input):
 def save_preset(user_input):
     os.system("clear")
 
-    preset_data = get_current_settings()
+    presets = read_presets()
+    if presets is None:
+        presets = {}
 
-    # Check if a name for the preset is given
     if check_value(user_input) == True:
         preset_name = user_input[1]
-
-        # Check if file exists & load
-        if not os.path.isfile(PRESET_FILE) or os.stat(PRESET_FILE).st_size == 0:
-            presets = {}
-        else:
-            with open(PRESET_FILE, "r") as f:
-                presets = json.load(f)
-
-        # Check if preset ID already exists
-        if preset_name in presets:
-            if not prompt_yes_no("Preset ID already exists, overwrite it?"):
-                return
     else:
         return
 
+    if preset_name in presets:
+        if not prompt_yes_no("Preset ID already exists, overwrite it?"):
+            return
+
     if check_status() == True:
 
-        # Add new preset
+        # Get settings and make a preset
+        preset_data = get_current_settings()
         presets[preset_name] = preset_data
 
         # Save updated presets
         with open(PRESET_FILE, "w") as f:
             json.dump(presets, f, indent=4)
 
+        # Display success message
         os.system("clear")
         print("PRESET SAVED SUCCESSFULLY!")
         text_body(
@@ -205,27 +201,19 @@ def save_preset(user_input):
 def load_preset(user_input):
     os.system("clear")
 
-    # Check if a name for the preset is given
+    presets = read_presets()
+    if presets is None:
+        return
+
     if check_value(user_input) == True:
         preset_name = user_input[1]
-
-        # Load presets from file
-        try:
-            with open(PRESET_FILE, "r") as f:
-                presets = json.load(f)
-        except FileNotFoundError:
-            os.system("clear")
-            print("No presets found!\n")
-            wait_for_key()
-            return
-
-        # Check if preset ID exists
-        if preset_name not in presets:
-            os.system("clear")
-            print(f"Preset '{preset_name}' not found!\n")
-            wait_for_key()
-            return
     else:
+        return
+
+    if preset_name not in presets:
+        os.system("clear")
+        print(f"Preset '{preset_name}' not found!\n")
+        wait_for_key()
         return
 
     if check_status() == True:
@@ -258,19 +246,15 @@ def load_preset(user_input):
         wait_for_key()
 
 def list_preset(user_input):
-    try:
-        with open(PRESET_FILE, "r") as f:
-            presets = json.load(f)
-    except FileNotFoundError:
-        os.system("clear")
-        print("No presets found!\n")
-        wait_for_key()
+    os.system("clear")
+
+    presets = read_presets()
+    if presets is None:
         return
 
-    os.system("clear")
+    # Print preset list
     print("List of available presets:\n")
 
-    # Loop though and print ID and settings for each preset
     for preset_name, preset in presets.items():
         buffer_value = preset["buffer"]
         samples_value = preset["samples"]
@@ -284,22 +268,15 @@ def list_preset(user_input):
 def remove_preset(user_input):
     os.system("clear")
 
+    presets = read_presets()
+    if presets is None:
+        return
+
     if check_value(user_input) == True:
         preset_name = user_input[1]
     else:
         return
 
-    # Load presets from file
-    try:
-        with open(PRESET_FILE, "r") as f:
-            presets = json.load(f)
-    except FileNotFoundError:
-        os.system("clear")
-        print("No presets found!\n")
-        wait_for_key()
-        return
-
-    # Check if preset ID exists
     if preset_name not in presets:
         os.system("clear")
         print(f"Preset '{preset_name}' not found!\n")
@@ -311,7 +288,7 @@ def remove_preset(user_input):
 
     # Save the updated presets file
     with open(PRESET_FILE, "w") as f:
-        json.dump(presets, f)
+        json.dump(presets, f, indent=4)
 
     # Display success message
     os.system("clear")
@@ -321,6 +298,17 @@ def remove_preset(user_input):
         f"{PRESET_FILE}",
     )
     wait_for_key()
+
+def read_presets():
+    try:
+        with open(PRESET_FILE, "r") as f:
+            presets = json.load(f)
+            return presets
+    except FileNotFoundError:
+        os.system("clear")
+        print("No presets found!\n")
+        wait_for_key()
+        return
 
 
 """Manual page"""
@@ -486,5 +474,13 @@ if __name__ == "__main__":
 #       when I have learned more
 #       and load_preset to open contents of the file. Check taken names
 #       and find the selected preset respectivly
+#
+#   2.  I feel like there is a lot of repetition in my saving and loading
+#       functions For example checking the given command and values.
+#       I am thinking about just making one function to check everything
+#       and call it in the beginning of every function BUT I am not sure
+#       that is actually helpful because there is so many variations and
+#       I might just end up trying to squeeze in everything into one place
+#       at the expence of functionality.
 #
 ###############################################################################
