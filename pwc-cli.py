@@ -222,7 +222,7 @@ def valid_error(user_input):
     wait_for_key()
 
 def name_error(user_input):
-    preset_name = user_input[0]
+    preset_name = user_input[1]
     os.system("clear")
     print(
         f"Preset '{preset_name.upper()}' could not be found!\n"
@@ -237,6 +237,32 @@ def status_error(*args):
         "Pipewire service is offline",
     )
     wait_for_key()
+
+"""Formating and interaction"""
+
+def wait_for_key():
+    if os.name == 'posix':
+        return os.system(
+            "bash -c 'read -n 1 -s -r -p \"Press any key to continue...\"'"
+        ) == 0
+    else:
+        input("Press ENTER to continue..."); return True
+
+def prompt_yes_no(question):
+    while True:
+        answer = input(f"{question} (y/n): ").lower()
+        if answer == "y":
+            return True
+        elif answer == "n":
+            return False
+        else:
+            print("Invalid answer. Please enter 'y' or 'n'.")
+
+def text_body(*args):
+    print()
+    for string in args:
+        print(string)
+    print()
 
 """Manual page"""
 
@@ -269,32 +295,6 @@ def manual():
     print("Note that presets can not be saved when pipewire is suspended!")
     print()
     wait_for_key()
-
-"""Formating and interaction"""
-
-def wait_for_key():
-    if os.name == 'posix':
-        return os.system(
-            "bash -c 'read -n 1 -s -r -p \"Press any key to continue...\"'"
-        ) == 0
-    else:
-        input("Press ENTER to continue..."); return True
-
-def prompt_yes_no(question):
-    while True:
-        answer = input(f"{question} (y/n): ").lower()
-        if answer == "y":
-            return True
-        elif answer == "n":
-            return False
-        else:
-            print("Invalid answer. Please enter 'y' or 'n'.")
-
-def text_body(*args):
-    print()
-    for string in args:
-        print(string)
-    print()
 
 """List and dicts of commands & settings"""
 
@@ -382,6 +382,9 @@ if __name__ == "__main__":
 #
 #   FUTURE PLANS!
 #
-#   1. Out of ideas! RIP!
+#   1.  Out of ideas! RIP!
+#
+#   2.  I COULD save like 1 line by making a function to write to the file
+#       instead of doing it twice!
 #
 ###############################################################################
