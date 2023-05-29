@@ -134,12 +134,9 @@ def load_preset(user_input):
         return
 
 def remove_preset(user_input):
-    if checklist(user_input, 'value'):
+    if checklist(user_input, 'value', 'name'):
         os.system("clear")
         presets = read_presets(); preset_name = user_input[1]
-
-        if preset_name not in presets:
-            name_error(preset_name); return
 
         presets.pop(preset_name)
         with open(PRESET_FILE, "w") as f:
