@@ -1,5 +1,5 @@
 # pwc-cli (pipewire controller - command line interface)
-# version: 0.9.0
+# version: 0.9.2
 # Creator: Simon E Palmer
 
 import json
@@ -42,8 +42,9 @@ def get_current_settings():
         }
 
 def show_current_settings():
-    settings = get_current_settings(); print(f"{settings['status']}")
-    text_body(
+    settings = get_current_settings()
+    display_message(
+        f"{settings['status']}\n",
         f"buffer size: {settings['buffer']}",
         f"sample rate: {settings['samples']}",
     )
@@ -67,9 +68,8 @@ def enable_pipewire(user_input):
     if not check_status():
         os.popen("systemctl --user start pipewire.socket")
         for i in range(10):
-            os.system("clear")
-            print("Pipewire is starting!")
-            text_body(
+            display_message(
+                "Pipewire is starting!\n",
                 "This will take a few seconds",
                 f"Loading{'.'*i}",
             )
@@ -103,9 +103,8 @@ def save_preset(user_input):
         with open(PRESET_FILE, "w") as f:
             json.dump(presets, f, indent=4)
 
-        os.system("clear")
-        print("Preset saved successfully!")
-        text_body(
+        display_message(
+            "Preset saved successfully!\n",
             f"Preset '{preset_name}' was saved to file:",
             f"{PRESET_FILE}",
         )
@@ -123,9 +122,8 @@ def load_preset(user_input):
         change_setting_value(["buffer", buffer_value])
         change_setting_value(["samples", samples_value])
 
-        os.system("clear")
-        print("Preset loaded successfully!")
-        text_body(
+        display_message(
+            "Preset loaded successfully!\n",
             f"Preset '{preset_name}' was loaded from file:",
             f"{PRESET_FILE}",
         )
@@ -142,9 +140,8 @@ def remove_preset(user_input):
         with open(PRESET_FILE, "w") as f:
             json.dump(presets, f, indent=4)
 
-        os.system("clear")
-        print("Preset removed successfully!")
-        text_body(
+        display_message(
+            "Preset removed successfully!\n",
             f"Preset '{preset_name}' was removed from file:",
             f"{PRESET_FILE}",
         )
@@ -202,9 +199,8 @@ def checklist(user_input, *args):
 """Error messages"""
 
 def value_error(user_input):
-    os.system("clear")
-    print("No value was given!")
-    text_body(
+    display_message(
+        "No value was given!\n",
         f"No value given for the command '{user_input[0]}'",
         f"Example: '{user_input[0]} <value>'",
     )
@@ -213,9 +209,8 @@ def value_error(user_input):
 def valid_error(user_input):
     setting = user_input[0]; value = user_input[1]
     valid_settings_string = ", ".join(valid_settings[setting])
-    os.system("clear")
-    print(f"'{value}' is not a valid value for '{setting}'!")
-    text_body(
+    display_message(
+        f"'{value}' is not a valid value for '{setting}'!\n",
         "Valid values are:",
         valid_settings_string,
     )
@@ -223,16 +218,14 @@ def valid_error(user_input):
 
 def name_error(user_input):
     preset_name = user_input[1]
-    os.system("clear")
     print(
         f"Preset '{preset_name.upper()}' could not be found!\n"
     )
     wait_for_key()
 
 def status_error(*args):
-    os.system("clear")
-    print("Pipewire is suspended!")
-    text_body(
+    display_message(
+        "Pipewire is suspended!\n",
         f"Can't set setting:",
         "Pipewire service is offline",
     )
@@ -258,8 +251,8 @@ def prompt_yes_no(question):
         else:
             print("Invalid answer. Please enter 'y' or 'n'.")
 
-def text_body(*args):
-    print()
+def display_message(*args):
+    os.system("clear")
     for string in args:
         print(string)
     print()
@@ -363,9 +356,8 @@ def main():
         elif user_input_list[0].lower() in commands:
             commands[user_input_list[0].lower()](user_input_list)
         else:
-            os.system("clear")
-            print("NO COMMAND")
-            text_body(
+            display_message(
+                "NO COMMAND\n",
                 "Command could not be found",
                 "Use command 'help' to show manual page",
             )
