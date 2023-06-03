@@ -58,7 +58,7 @@ def change_setting_value(user_input):
         if value != current_setting:
             os.system(
                 f'pw-metadata -n settings 0 {pw_commands[setting]} {value}'
-        )
+            )
     else:
         return
 
@@ -273,13 +273,11 @@ def display_message(*args):
         print(string)
     print()
 
-"""Manual page"""
+"""Manual pages"""
 
 def manual():
     os.system("clear")
-    print("Manual page for pwc-cli:")
-    print()
-    print("Commands:")
+    print("Settings:")
     print()
     print("buffer       buffer <value>")
     print("                 Sets the buffer size to the chosen value")
@@ -289,47 +287,35 @@ def manual():
     print("enable       Enables pipewire if it's suspended")
     print("disable      Disables pipewire if it's running")
     print()
+    print("Utility:")
+    print()
     print("help         Displays this page")
     print("exit         Exits the program")
     print()
-    print("save         save <preset name>")
+    # Next page
+    wait_for_key()
+    os.system("clear")
+    print("Save states:")
+    print()
+    print("save         save <name>")
     print("                 Saves the current settings as a preset")
-    print("load         load <preset name>")
+    print("load         load <name>")
     print("                 Loads the settings of a previously saved preset")
-    print("remove       remove <preset name>")
+    print("remove       remove <name>")
     print("                 Removes the named preset")
     print("list         list")
     print("                 Lists all saved presets")
     print()
     print("Note that presets can not be saved when pipewire is suspended!")
     print()
+    print("Shorthands:")
+    print()
+    print("Shorthands allow you to only type the value that you want and the")
+    print("program will match it to the setting it is valid for and apply it")
+    print()
     wait_for_key()
 
 """Quick settings!"""
-
-def shortcut_512(*args): # Takes *args because main loop passes user input
-    output = ["buffer", "512"]
-    change_setting_value(output)
-
-def shortcut_256(*args):
-    output = ["buffer", "256"]
-    change_setting_value(output)
-
-def shortcut_128(*args):
-    output = ["buffer", "128"]
-    change_setting_value(output)
-
-def shortcut_64(*args):
-    output = ["buffer", "64"]
-    change_setting_value(output)
-
-def shortcut_48(*args):
-    output = ["samples", "48000"]
-    change_setting_value(output)
-
-def shortcut_44(*args):
-    output = ["samples", "44100"]
-    change_setting_value(output)
 
 def reset_defaults(*args):
     if check_status():
@@ -348,6 +334,10 @@ def reset_defaults(*args):
     else:
         status_error()
 
+def shorthands(value, setting):
+    output = [setting, value]
+    change_setting_value(output)
+
 """List and dicts of commands & settings"""
 
 valid_settings = {
@@ -364,12 +354,6 @@ commands = {
     "load"      :   load_preset,
     "list"      :   list_presets,
     "remove"    :   remove_preset,
-    "512"       :   shortcut_512,
-    "256"       :   shortcut_256,
-    "128"       :   shortcut_128,
-    "64"        :   shortcut_64,
-    "48"        :   shortcut_48,
-    "44"        :   shortcut_44,
     "default"   :   reset_defaults,
 }
 
@@ -414,21 +398,30 @@ def main():
         show_current_settings()
         user_input = input("Enter command: ")
         user_input_list = user_input.split(" ")
+        command = user_input_list[0]
 
-        if user_input_list[0].lower() in exit_variants:
+        if command.lower() in exit_variants:
             break
-        elif user_input_list[0].lower() in help_variants:
+        elif command.lower() in help_variants:
             manual()
-        elif user_input_list[0].lower() in commands:
-            commands[user_input_list[0].lower()](user_input_list)
         else:
-            display_message(
-                "No command\n",
-                "Command could not be found",
-                "Use command 'help' to show manual page",
-            )
-            if prompt_yes_no("See manual page now?") == True:
-                manual()
+            found = False
+            for key, values in valid_settings.items():
+                if command in values:
+                    shorthands(user_input, key)
+                    found = True; break
+
+            if not found:
+                if command.lower() in commands:
+                    commands[command.lower()](user_input_list)
+                else:
+                    display_message(
+                        "No command\n",
+                        "Command could not be found",
+                        "Use command 'help' to show manual page",
+                    )
+                    if prompt_yes_no("See manual page now?") == True:
+                        manual()
 
     os.system("clear")
 
