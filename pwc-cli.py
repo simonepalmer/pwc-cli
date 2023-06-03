@@ -1,5 +1,5 @@
 # pwc-cli (pipewire controller - command line interface)
-# version: 0.9.5
+# version: 0.9.9
 # Creator: Simon E Palmer
 
 import json
