@@ -1,5 +1,5 @@
 # pwc-cli (pipewire controller - command line interface)
-# version: 0.9.2
+# version: 0.9.5
 # Creator: Simon E Palmer
 
 import json
@@ -30,23 +30,23 @@ def get_current_settings():
         samples = settings_list[samples_index+2]
 
         return {
-            "status": "Pipewire is RUNNING",
-            "buffer": f"{buffer} spls",
+            "status": "Pipewire is active",
+            "buffer": f"{buffer} Samples",
             "samples": f"{samples} Hz",
         }
     else:
         return {
-            "status": "Pipewire is SUSPENDED",
-            "buffer": "disabled",
-            "samples": "disabled",
+            "status": "Pipewire is suspended",
+            "buffer": "Disabled",
+            "samples": "Disabled",
         }
 
 def show_current_settings():
     settings = get_current_settings()
     display_message(
         f"{settings['status']}\n",
-        f"buffer size: {settings['buffer']}",
-        f"sample rate: {settings['samples']}",
+        f"Buffer size: {settings['buffer']}",
+        f"Sample rate: {settings['samples']}",
     )
 
 """Manipulating settings"""
@@ -99,13 +99,10 @@ def save_preset(user_input):
                 return
 
         preset_data = get_current_settings()
-        presets[preset_name] = preset_data
-        with open(PRESET_FILE, "w") as f:
-            json.dump(presets, f, indent=4)
-
+        presets[preset_name] = preset_data; write_presets(presets)
         display_message(
             "Preset saved successfully!\n",
-            f"Preset '{preset_name}' was saved to file:",
+            f"Preset '{preset_name}' was saved to '.presets.json':",
             f"{PRESET_FILE}",
         )
         wait_for_key()
@@ -124,7 +121,7 @@ def load_preset(user_input):
 
         display_message(
             "Preset loaded successfully!\n",
-            f"Preset '{preset_name}' was loaded from file:",
+            f"Preset '{preset_name}' was loaded from '.presets.json':",
             f"{PRESET_FILE}",
         )
         wait_for_key()
@@ -136,13 +133,10 @@ def remove_preset(user_input):
         os.system("clear")
         presets = read_presets(); preset_name = user_input[1]
 
-        presets.pop(preset_name)
-        with open(PRESET_FILE, "w") as f:
-            json.dump(presets, f, indent=4)
-
+        presets.pop(preset_name); write_presets(presets)
         display_message(
             "Preset removed successfully!\n",
-            f"Preset '{preset_name}' was removed from file:",
+            f"Preset '{preset_name}' was removed from '.presets.json':",
             f"{PRESET_FILE}",
         )
         wait_for_key()
@@ -151,13 +145,18 @@ def remove_preset(user_input):
 
 def list_presets(user_input):
     os.system("clear")
-    presets = read_presets()
-    print("List of available presets:\n")
-    for preset_name, setting in presets.items():
-        buffer_value = setting["buffer"]; samples_value = setting["samples"]
-        print(f"{preset_name.upper()}")
-        print(f"buffer={buffer_value}, samples={samples_value}")
-        print()
+    presets = read_presets(); number_of_presets = len(presets.items())
+    if number_of_presets == 0:
+        print("No presets found!\n")
+    else:
+        presets_sorted = {key: presets[key] for key in sorted(presets.keys())}
+        print("List of saved presets:\n")
+        for preset_name, setting in presets_sorted.items():
+            buffer_value = setting["buffer"]; samples_value = setting["samples"]
+            buffer = buffer_value.split(" "); samples = samples_value.split(" ")
+            print(f"Preset ID: {preset_name.upper()}")
+            print(f"buffer={buffer[0]}, samples={samples[0]}")
+            print()
 
     wait_for_key()
 
@@ -167,7 +166,23 @@ def read_presets():
             presets = json.load(f)
             return presets
     except json.JSONDecodeError:
+        display_message(
+            f"Error: Can't read presets!\n",
+            f"Please check if {PRESET_FILE} exists and can be read\n",
+        )
+        wait_for_key()
         return {}
+
+def write_presets(presets):
+    try:
+        with open(PRESET_FILE, "w") as f:
+            json.dump(presets, f, indent=4)
+    except FileNotFoundError:
+        display_message(
+            f"Error: File not found!\n",
+            f"Please check if {PRESET_FILE} exists and can be written to\n",
+        )
+        wait_for_key()
 
 """Checks before assigning and executing"""
 
@@ -199,10 +214,11 @@ def checklist(user_input, *args):
 """Error messages"""
 
 def value_error(user_input):
+    setting = user_input[0]
     display_message(
         "No value was given!\n",
-        f"No value given for the command '{user_input[0]}'",
-        f"Example: '{user_input[0]} <value>'",
+        f"No value given for the command '{setting}'",
+        f"Example: '{setting} <value>'",
     )
     wait_for_key()
 
@@ -307,11 +323,6 @@ commands = {
     "remove"    :   remove_preset,
 }
 
-pw_commands = {
-    "buffer"    :   'clock.force-quantum',
-    "samples"   :   'clock.force-rate',
-}
-
 checklist_map = {
     "value"     :   check_value,
     "valid"     :   check_valid,
@@ -324,6 +335,11 @@ error_map = {
     "valid"     :   valid_error,
     "status"    :   status_error,
     "name"      :   name_error,
+}
+
+pw_commands = {
+    "buffer"    :   'clock.force-quantum',
+    "samples"   :   'clock.force-rate',
 }
 
 exit_variants = [
@@ -357,7 +373,7 @@ def main():
             commands[user_input_list[0].lower()](user_input_list)
         else:
             display_message(
-                "NO COMMAND\n",
+                "No command\n",
                 "Command could not be found",
                 "Use command 'help' to show manual page",
             )
@@ -375,8 +391,5 @@ if __name__ == "__main__":
 #   FUTURE PLANS!
 #
 #   1.  Out of ideas! RIP!
-#
-#   2.  I COULD save like 1 line by making a function to write to the file
-#       instead of doing it twice!
 #
 ###############################################################################
