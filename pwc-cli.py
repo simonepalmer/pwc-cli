@@ -247,7 +247,7 @@ def status_error(*args):
     )
     wait_for_key()
 
-"""Formating and interaction"""
+"""Formatting and interaction"""
 
 def wait_for_key():
     if os.name == 'posix':
