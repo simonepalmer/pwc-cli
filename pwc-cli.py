@@ -305,6 +305,49 @@ def manual():
     print()
     wait_for_key()
 
+"""Quick settings!"""
+
+def shortcut_512(*args): # Takes *args because main loop passes user input
+    output = ["buffer", "512"]
+    change_setting_value(output)
+
+def shortcut_256(*args):
+    output = ["buffer", "256"]
+    change_setting_value(output)
+
+def shortcut_128(*args):
+    output = ["buffer", "128"]
+    change_setting_value(output)
+
+def shortcut_64(*args):
+    output = ["buffer", "64"]
+    change_setting_value(output)
+
+def shortcut_48(*args):
+    output = ["samples", "48000"]
+    change_setting_value(output)
+
+def shortcut_44(*args):
+    output = ["samples", "44100"]
+    change_setting_value(output)
+
+def reset_defaults(*args):
+    if check_status():
+        default_settings = os.popen('pw-metadata -n settings').read()
+        defaults_list = default_settings.split("'")
+
+        buffer_index = defaults_list.index('clock.quantum')
+        default_buffer = defaults_list[buffer_index+2]
+        samples_index = defaults_list.index('clock.rate')
+        default_samples = defaults_list[samples_index+2]
+
+        buffer_output = ["buffer", default_buffer]
+        sample_output = ["samples", default_samples]
+        change_setting_value(buffer_output)
+        change_setting_value(sample_output)
+    else:
+        status_error()
+
 """List and dicts of commands & settings"""
 
 valid_settings = {
@@ -321,6 +364,13 @@ commands = {
     "load"      :   load_preset,
     "list"      :   list_presets,
     "remove"    :   remove_preset,
+    "512"       :   shortcut_512,
+    "256"       :   shortcut_256,
+    "128"       :   shortcut_128,
+    "64"        :   shortcut_64,
+    "48"        :   shortcut_48,
+    "44"        :   shortcut_44,
+    "default"   :   reset_defaults,
 }
 
 checklist_map = {
