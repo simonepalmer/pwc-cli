@@ -277,7 +277,7 @@ def display_message(*args):
 
 def manual():
     os.system("clear")
-    print("Settings:")
+    print("Settings:                                                    (1/2)")
     print()
     print("buffer       buffer <value>")
     print("                 Sets the buffer size to the chosen value")
@@ -295,7 +295,7 @@ def manual():
     # Next page
     wait_for_key()
     os.system("clear")
-    print("Save states:")
+    print("Save states:                                                 (2/2)")
     print()
     print("save         save <name>")
     print("                 Saves the current settings as a preset")
