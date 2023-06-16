@@ -1,5 +1,5 @@
 # pwc-cli (pipewire controller - command line interface)
-# version: 0.9.9
+# version: 0.9.9.1
 # Creator: Simon E Palmer
 
 import json
@@ -99,6 +99,9 @@ def save_preset(user_input):
                 return
 
         preset_data = get_current_settings()
+
+        # Should I remove units before saving?
+
         presets[preset_name] = preset_data; write_presets(presets)
         display_message(
             "Preset saved successfully!\n",
@@ -116,8 +119,11 @@ def load_preset(user_input):
         preset = presets[preset_name]
         buffer_value = preset["buffer"]; samples_value = preset["samples"]
 
-        change_setting_value(["buffer", buffer_value])
-        change_setting_value(["samples", samples_value])
+        # Removing units from save file data
+        buffer = buffer_value.split(" "); samples = samples_value.split(" ")
+
+        change_setting_value(["buffer", buffer[0]])
+        change_setting_value(["samples", samples[0]])
 
         display_message(
             "Preset loaded successfully!\n",
@@ -153,7 +159,10 @@ def list_presets(user_input):
         print("List of saved presets:\n")
         for preset_name, setting in presets_sorted.items():
             buffer_value = setting["buffer"]; samples_value = setting["samples"]
+
+            # Removing units from save file data
             buffer = buffer_value.split(" "); samples = samples_value.split(" ")
+
             print(f"Preset ID: {preset_name.upper()}")
             print(f"buffer={buffer[0]}, samples={samples[0]}")
             print()
@@ -186,11 +195,26 @@ def write_presets(presets):
 
 """Checks before assigning and executing"""
 
+def add_value(user_input):
+    value = input("Enter a value: ")
+    user_input.append(value)
+    print(user_input)
+    return user_input
+
 def check_value(user_input):
+    if len(user_input) == 1:
+        os.system("clear")
+        print(f"No value given for {user_input[0]}!\n")
+        add_value(user_input)
     return True if len(user_input) > 1 else False
 
 def check_valid(user_input):
     setting = user_input[0]; value = user_input[1]
+    if value not in valid_settings[setting]:
+        os.system("clear")
+        print(f"'{value}' is not a valid value for '{setting}'!\n")
+        user_input.pop()
+        add_value(user_input); value = user_input[1]
     return True if value in valid_settings[setting] else False
 
 def check_name(user_input):
@@ -433,6 +457,11 @@ if __name__ == "__main__":
 #
 #   FUTURE PLANS!
 #
-#   1.  Out of ideas! RIP!
+#   1.  Remove units before saving to the file so I don't need to remove it
+#       both in load and list functions and don't have to make a seperate
+#       function that removes the units that I only call twice?
+#
+#   2.  Maybe I should give a message confirming that settings changed instead
+#       off just throwing back to main screen? it's not as fast though....
 #
 ###############################################################################
