@@ -14,7 +14,7 @@ PRESET_FILE = os.path.join(PRESET_PATH, ".presets.json")
 """Current settings"""
 
 def get_current_settings():
-    if check_status():
+    if check_status() is True:
         current_settings = os.popen('pw-metadata -n settings').read()
         settings_list = current_settings.split("'")
 
@@ -52,7 +52,7 @@ def show_current_settings():
 """Manipulating settings"""
 
 def change_setting_value(user_input):
-    if checklist(user_input, 'value', 'valid', 'status'):
+    if checklist(user_input, 'value', 'valid', 'status') is True:
         setting = user_input[0]; value = user_input[1]
         current_setting = get_current_settings()[setting]
         if value != current_setting:
@@ -65,7 +65,7 @@ def change_setting_value(user_input):
 """Enable and disable"""
 
 def enable_pipewire(user_input):
-    if not check_status():
+    if check_status() is not True:
         os.popen("systemctl --user start pipewire.socket")
         for i in range(10):
             display_message(
@@ -80,7 +80,7 @@ def enable_pipewire(user_input):
         print("Pipewire is already running!\n"); wait_for_key()
 
 def disable_pipewire(user_input):
-    if check_status():
+    if check_status() is True:
         os.system(f'systemctl --user stop pipewire.socket')
         os.system(f'systemctl --user stop pipewire.service')
     else:
@@ -90,7 +90,7 @@ def disable_pipewire(user_input):
 """Presets"""
 
 def save_preset(user_input):
-    if checklist(user_input, 'value', 'status'):
+    if checklist(user_input, 'value', 'status') is True:
         os.system("clear")
         presets = read_presets(); preset_name = user_input[1]
 
@@ -101,6 +101,8 @@ def save_preset(user_input):
         preset_data = get_current_settings()
 
         # Should I remove units before saving?
+        # Or keep it like this so the data in
+        # the file is more readable?
 
         presets[preset_name] = preset_data; write_presets(presets)
         display_message(
@@ -113,7 +115,7 @@ def save_preset(user_input):
         return
 
 def load_preset(user_input):
-    if checklist(user_input, 'value', 'name', 'status'):
+    if checklist(user_input, 'value', 'name', 'status') is True:
         os.system("clear")
         presets = read_presets(); preset_name = user_input[1]
         preset = presets[preset_name]
@@ -135,7 +137,7 @@ def load_preset(user_input):
         return
 
 def remove_preset(user_input):
-    if checklist(user_input, 'value', 'name'):
+    if checklist(user_input, 'value', 'name') is True:
         os.system("clear")
         presets = read_presets(); preset_name = user_input[1]
 
@@ -342,7 +344,7 @@ def manual():
 """Quick settings!"""
 
 def reset_defaults(*args):
-    if check_status():
+    if check_status() is True:
         default_settings = os.popen('pw-metadata -n settings').read()
         defaults_list = default_settings.split("'")
 
@@ -444,7 +446,7 @@ def main():
                         "Command could not be found",
                         "Use command 'help' to show manual page",
                     )
-                    if prompt_yes_no("See manual page now?") == True:
+                    if prompt_yes_no("View manual page?") == True:
                         manual()
 
     os.system("clear")
